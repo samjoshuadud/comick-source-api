@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 export class MangaCloudScraper extends BaseScraper {
@@ -182,5 +182,77 @@ export class MangaCloudScraper extends BaseScraper {
   protected override extractChapterNumber(chapterUrl: string): number {
     const match = chapterUrl.match(/\/chapter\/(\d+)/);
     return match ? parseFloat(match[1]) : 0;
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    // Extract comic ID and chapter from URL
+    const urlMatch = chapterUrl.match(/\/comic\/(\d+)\/chapter\/(.+)/);
+    if (!urlMatch) {
+      throw new Error("Invalid MangaCloud chapter URL format");
+    }
+
+    const [, comicId, chapterIdentifier] = urlMatch;
+
+    try {
+      // First get the chapter list to find the correct chapter ID
+      const chaptersResponse = await fetch(`${this.API_URL}/comic/${comicId}`, {
+        headers: {
+          Accept: "*/*",
+          Origin: this.BASE_URL,
+          Referer: `${this.BASE_URL}/`,
+          "User-Agent": this.config.userAgent,
+        },
+      });
+
+      if (!chaptersResponse.ok) {
+        throw new Error(`HTTP ${chaptersResponse.status}`);
+      }
+
+      const chaptersData = await chaptersResponse.json();
+      const chapters = chaptersData.data?.chapters || [];
+      
+      // Find the chapter by ID or number
+      let targetChapter = chapters.find((ch: any) => ch.id === chapterIdentifier);
+      if (!targetChapter) {
+        const chapterNum = parseFloat(chapterIdentifier);
+        targetChapter = chapters.find((ch: any) => ch.number === chapterNum);
+      }
+
+      if (!targetChapter) {
+        throw new Error("Chapter not found");
+      }
+
+      // Now fetch the chapter images
+      const chapterResponse = await fetch(`${this.API_URL}/chapter/${targetChapter.id}`, {
+        headers: {
+          Accept: "*/*",
+          Origin: this.BASE_URL,
+          Referer: chapterUrl,
+          "User-Agent": this.config.userAgent,
+        },
+      });
+
+      if (!chapterResponse.ok) {
+        throw new Error(`HTTP ${chapterResponse.status}`);
+      }
+
+      const chapterData = await chapterResponse.json();
+      const images = chapterData.data?.images || [];
+      
+      return images.map((img: any, index: number) => ({
+        url: `https://meo3.comick.pictures/${img.id}.${img.f}`,
+        index,
+        headers: {
+          Referer: "https://mangacloud.org/",
+        },
+      }));
+    } catch (error) {
+      console.error("[MangaCloud] Error fetching chapter pages:", error);
+      throw error;
+    }
   }
 }

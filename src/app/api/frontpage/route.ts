@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(
-      `[Frontpage] Fetching ${source}/${section} (page: ${page || 1}, limit: ${limit || 30}, days: ${days || 7})`
+      `[Frontpage] Fetching ${source}/${section} (page: ${page || 1}, limit: ${limit || 48}, days: ${days || 7})`
     );
 
     const sectionData = await frontpage.fetchSection(section, {
       page: page || 1,
-      limit: limit || 30,
+      limit: limit || 48,
       days: days || 7,
     });
 

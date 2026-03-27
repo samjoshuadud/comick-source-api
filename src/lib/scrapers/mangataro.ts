@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 export class MangataroScraper extends BaseScraper {
@@ -87,6 +87,50 @@ export class MangataroScraper extends BaseScraper {
     }
 
     return chapters.sort((a, b) => a.number - b.number);
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    // Extract chapter_id from URL pattern: /ch{number}-{id}
+    // e.g. https://mangataro.org/read/omniscient-readers-viewpoint/ch1-6499 → 6499
+    const idMatch = chapterUrl.match(/ch[\d.]+-([\d]+)/);
+    if (!idMatch) {
+      throw new Error(`Cannot extract chapter ID from URL: ${chapterUrl}`);
+    }
+
+    const chapterId = idMatch[1];
+    const { token, timestamp } = this.generateApiToken();
+
+    const apiUrl = `${this.BASE_URL}/auth/chapter-content?chapter_id=${chapterId}&_t=${token}&_ts=${timestamp}`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": this.config.userAgent,
+        Referer: chapterUrl,
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !Array.isArray(data.images)) {
+      throw new Error("Invalid chapter content response");
+    }
+
+    return data.images.map((url: string, index: number) => ({
+      url,
+      index,
+      headers: {
+        Referer: "https://mangataro.org/",
+      },
+    }));
   }
 
   private md5(str: string): string {

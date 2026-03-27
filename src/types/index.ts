@@ -14,6 +14,12 @@ export interface ScrapedChapter {
   group?: ScanlationGroup;
 }
 
+export interface ChapterPage {
+  url: string;
+  index: number;
+  headers?: Record<string, string>;
+}
+
 export interface SearchResult {
   id: string;
   title: string;

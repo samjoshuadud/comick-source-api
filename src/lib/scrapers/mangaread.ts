@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult } from "@/types";
 
 export class MangaReadScraper extends BaseScraper {
@@ -175,5 +175,33 @@ export class MangaReadScraper extends BaseScraper {
     });
 
     return results;
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    const html = await this.fetchWithRetry(chapterUrl);
+    const $ = cheerio.load(html);
+    const pages: ChapterPage[] = [];
+
+    // Find all chapter images with wp-manga-chapter-img class
+    $("img.wp-manga-chapter-img").each((index, element) => {
+      const $img = $(element);
+      const src = $img.attr("data-src") || $img.attr("src");
+      
+      if (src && src.includes("/uploads/")) {
+        pages.push({
+          url: src.trim(),
+          index,
+          headers: {
+            Referer: "https://www.mangaread.org/",
+          },
+        });
+      }
+    });
+
+    return pages.sort((a, b) => a.index - b.index);
   }
 }

@@ -6,6 +6,12 @@ interface ScraperConfig {
   userAgent: string;
 }
 
+export interface ChapterPage {
+  url: string;
+  index: number;
+  headers?: Record<string, string>;
+}
+
 export abstract class BaseScraper {
   protected config: ScraperConfig;
 
@@ -27,6 +33,12 @@ export abstract class BaseScraper {
   ): Promise<{ title: string; id: string }>;
   abstract getChapterList(mangaUrl: string): Promise<ScrapedChapter[]>;
   abstract search(query: string): Promise<SearchResult[]>;
+  
+  // Get chapter page images - override in scrapers that support it
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    void chapterUrl;
+    throw new Error(`${this.getName()} does not support chapter page scraping yet`);
+  }
 
   protected async fetchWithRetry(
     url: string,
@@ -85,5 +97,10 @@ export abstract class BaseScraper {
 
   getType(): SourceType {
     return "aggregator";
+  }
+  
+  // Check if this scraper supports page scraping
+  supportsPageScraping(): boolean {
+    return false;
   }
 }

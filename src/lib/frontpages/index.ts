@@ -1,9 +1,15 @@
 import { FrontpageInfo } from "@/types";
 import { BaseFrontpage } from "./base";
 import { ComixFrontpage } from "./comix";
+import { AsuraScanFrontpage } from "./asurascan";
+import { MangaReadFrontpage } from "./mangaread";
+import { MangaCloudFrontpage } from "./mangacloud";
 
 const frontpages: BaseFrontpage[] = [
   new ComixFrontpage(),
+  new AsuraScanFrontpage(),
+  new MangaReadFrontpage(),
+  new MangaCloudFrontpage(),
 ];
 
 export function getFrontpage(sourceId: string): BaseFrontpage | null {
@@ -28,3 +34,6 @@ export function getFrontpageSourceIds(): string[] {
 
 export { BaseFrontpage } from "./base";
 export { ComixFrontpage } from "./comix";
+export { AsuraScanFrontpage } from "./asurascan";
+export { MangaReadFrontpage } from "./mangaread";
+export { MangaCloudFrontpage } from "./mangacloud";
