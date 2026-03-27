@@ -24,6 +24,14 @@ When adding new sources later:
 4. Add source to backend verification scope
 5. Add test chapter URL to `page-scraping.test.ts`
 
+## 🖥️ Reader UI Integration (Completed)
+
+The multi-source tracking and reader UI is integrated into the primary Next.js frontend (`partyhwa/frontend`) and Go backend (`partyhwa/backend`):
+1. **API Fallbacks**: Go backend aggregates multi-source NDJSON streams into the unified `/api/manga` discovery lists.
+2. **Title Normalization**: Frontend fuzzy-matches titles (stripping punctuation and `(Manhwa)` tags) to group the exact same manga across different sources.
+3. **Source Picker**: Frontend dynamically queries alternative sources when viewing a manga and provides a seamless UI to switch the active reading source.
+
+
 ## 🔄 High Priority (Popular sources with good results)
 
 - [ ] **FlameComics** - Next.js based, needs investigation for image loading
