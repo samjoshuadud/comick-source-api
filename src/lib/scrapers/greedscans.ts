@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 export class GreedScansScraper extends BaseScraper {
@@ -154,5 +154,60 @@ export class GreedScansScraper extends BaseScraper {
     });
 
     return results;
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    const html = await this.fetchWithRetry(chapterUrl);
+    const pages: ChapterPage[] = [];
+    const seen = new Set<string>();
+
+    const addPage = (url: string) => {
+      const cleanUrl = url.replace(/\\\//g, "/").trim();
+      if (!cleanUrl.startsWith("http")) return;
+      if (seen.has(cleanUrl)) return;
+      seen.add(cleanUrl);
+      pages.push({
+        url: cleanUrl,
+        index: pages.length,
+        headers: { Referer: this.getBaseUrl() },
+      });
+    };
+
+    // Try ts_reader.run() pattern (Madara theme)
+    const readerPayloadMatch = html.match(/ts_reader\.run\((\{[\s\S]*?\})\);/);
+    if (readerPayloadMatch) {
+      try {
+        const payload = JSON.parse(readerPayloadMatch[1]);
+        const sources = Array.isArray(payload?.sources) ? payload.sources : [];
+        for (const source of sources) {
+          const images = Array.isArray(source?.images) ? source.images : [];
+          for (const imageUrl of images) {
+            if (typeof imageUrl === "string") {
+              addPage(imageUrl);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("[GreedScans] Failed to parse ts_reader payload:", error);
+      }
+    }
+
+    // Fallback: look for image URLs in wp-content/uploads/manga
+    if (pages.length === 0) {
+      const fallbackMatches = html.match(
+        /https?:\/\/[^"'\s]+\/wp-content\/uploads\/manga\/[^"'\s]+\.(?:webp|jpg|jpeg|png)/gi,
+      );
+      if (fallbackMatches) {
+        for (const url of fallbackMatches) {
+          addPage(url);
+        }
+      }
+    }
+
+    return pages.map((page, index) => ({ ...page, index }));
   }
 }

@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 interface ScraperConfig {
   retryAttempts: number;
   downloadDelay: number;
+  requestTimeoutMs: number;
   userAgent: string;
 }
 
@@ -20,6 +21,7 @@ export abstract class BaseScraper {
     this.config = {
       retryAttempts: 3,
       downloadDelay: 1000,
+      requestTimeoutMs: 8000,
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       ...config,
@@ -95,18 +97,29 @@ export abstract class BaseScraper {
   ): Promise<string> {
     for (let i = 0; i <= retries; i++) {
       try {
-        const response = await fetch(url, {
-          headers: {
-            "User-Agent": this.config.userAgent,
-            Accept:
-              "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
-            DNT: "1",
-            Connection: "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-          },
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          this.config.requestTimeoutMs,
+        );
+        let response: Response;
+        try {
+          response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              "User-Agent": this.config.userAgent,
+              Accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.5",
+              "Accept-Encoding": "gzip, deflate",
+              DNT: "1",
+              Connection: "keep-alive",
+              "Upgrade-Insecure-Requests": "1",
+            },
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
