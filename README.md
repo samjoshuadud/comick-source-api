@@ -92,6 +92,18 @@ npm run build
 npm start
 ```
 
+## Security (recommended for production)
+
+Lock API routes behind an internal key so only your backend can call them:
+
+```bash
+INTERNAL_API_KEY=change-me-strong-random-secret
+```
+
+- In production, all `/api/*` routes require header `X-Internal-Api-Key`.
+- Your backend (`api.partyhwa.app`) should send that same value via `SOURCE_API_INTERNAL_KEY`.
+- Keep this key only in server env/secret manager (never expose to frontend).
+
 ## API
 
 ### GET /api/sources
