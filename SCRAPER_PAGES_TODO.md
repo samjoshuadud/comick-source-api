@@ -6,7 +6,7 @@ This document tracks which scrapers need `getChapterPages()` implementation for 
 
 - [x] **AsuraScan** - Uses CDN images from `cdn.asurascans.com/asura-images/chapters/`
 - [x] **MangaRead** - WordPress-based, uses `wp-manga-chapter-img` class
-- [x] **MangaCloud** - Has API endpoint for chapter images
+- [x] **Hades Scans** - Reader payload includes `ts_reader.run({... sources[].images ...})`
 - [x] **Mangataro** - Has API endpoint `auth/chapter-content` for chapter images (CDN: mangataro.yachts)
 - [x] **Thunderscans** - Reader payload includes `ts_reader.run({... sources[].images ...})`
 - [x] **Vortex Scans** - Reader HTML includes `storage.vortexscans.io` chapter image URLs
@@ -16,7 +16,7 @@ This document tracks which scrapers need `getChapterPages()` implementation for 
 
 End-to-end verification covers the implemented sources above (except sources currently blocked by Cloudflare in server runtime).
 
-- Backend `/api/pages` supports: `AsuraScan`, `MangaRead`, `MangaCloud`, `Mangataro`, `Thunderscans`, `Vortex Scans`, `MangaDex`
+- Backend `/api/pages` supports: `AsuraScan`, `MangaRead`, `Hades Scans`, `Mangataro`, `Thunderscans`, `Vortex Scans`, `MangaDex`
 - Chapter list/page flows should be tested with `source` query/body set to one of those sources
 - Other scrapers must stay in TODO state until their `getChapterPages()` is implemented
 
@@ -73,8 +73,8 @@ The multi-source tracking and reader UI is integrated into the primary Next.js f
    - AsuraScan: `cdn.asurascans.com/asura-images/chapters/{manga}/{chapter}/{page}.webp`
    - Pattern: `$('img[src*="cdn.asurascans.com"]')`
 
-3. **API-based**
-   - MangaCloud: `api.mangacloud.org/chapter/{id}` returns JSON with image array
+3. **Reader payload (WordPress theme)**
+   - Hades Scans: `ts_reader.run({... sources[].images ...})` embeds chapter image arrays
    - Comix: `api.comix.to/v2/...` (Cloudflare protected)
 
 4. **JavaScript Variables**

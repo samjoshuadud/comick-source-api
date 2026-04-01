@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 export class HadesScansScraper extends BaseScraper {
@@ -161,5 +161,60 @@ export class HadesScansScraper extends BaseScraper {
     });
 
     return results.slice(0, 5);
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    const html = await this.fetchWithRetry(chapterUrl);
+    const pages: ChapterPage[] = [];
+    const seen = new Set<string>();
+
+    const addPage = (url: string) => {
+      const cleanUrl = url.replace(/\\\//g, "/").trim();
+      if (!cleanUrl.startsWith("http")) return;
+      if (seen.has(cleanUrl)) return;
+      seen.add(cleanUrl);
+      pages.push({
+        url: cleanUrl,
+        index: pages.length,
+        headers: {
+          Referer: this.BASE_URL,
+        },
+      });
+    };
+
+    const payloadMatch = html.match(/ts_reader\.run\((\{[\s\S]*?\})\);/);
+    if (payloadMatch) {
+      try {
+        const payload = JSON.parse(payloadMatch[1]);
+        const sources = Array.isArray(payload?.sources) ? payload.sources : [];
+        for (const source of sources) {
+          const images = Array.isArray(source?.images) ? source.images : [];
+          for (const imageUrl of images) {
+            if (typeof imageUrl === "string") {
+              addPage(imageUrl);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("[HadesScans] Failed to parse ts_reader payload:", error);
+      }
+    }
+
+    if (pages.length === 0) {
+      const fallback = html.match(
+        /https?:\/\/hadesscans\.com\/wp-content\/uploads\/[^"'\s]+\.(?:webp|jpg|jpeg|png)/gi,
+      );
+      if (fallback) {
+        for (const url of fallback) {
+          addPage(url);
+        }
+      }
+    }
+
+    return pages.map((page, index) => ({ ...page, index }));
   }
 }

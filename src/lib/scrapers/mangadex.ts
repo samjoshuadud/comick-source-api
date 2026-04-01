@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseScraper, ChapterPage } from "./base";
-import { ScrapedChapter, SearchResult, SourceType } from "@/types";
+import { ScrapedChapter, ScrapedMangaDetails, SearchResult, SourceType } from "@/types";
 
 export class MangaDexScraper extends BaseScraper {
   private readonly BASE_URL = "https://mangadex.org";
@@ -116,31 +116,40 @@ export class MangaDexScraper extends BaseScraper {
 
   async getChapterList(mangaUrl: string): Promise<ScrapedChapter[]> {
     const mangaId = this.parseMangaId(mangaUrl);
-    const url = `${this.API_URL}/manga/${mangaId}/feed?limit=500&translatedLanguage[]=en&order[chapter]=desc&includes[]=scanlation_group&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": this.config.userAgent,
-        Accept: "application/json",
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const fetchFeed = async (withEnglish: boolean) => {
+      const languageFilter = withEnglish ? "&translatedLanguage[]=en" : "";
+      const feedUrl = `${this.API_URL}/manga/${mangaId}/feed?limit=500${languageFilter}&order[chapter]=desc&includes[]=scanlation_group&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+      const response = await fetch(feedUrl, {
+        headers: {
+          "User-Agent": this.config.userAgent,
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data?.data) ? data.data : [];
+    };
+
+    let rows = await fetchFeed(true);
+    if (rows.length === 0) {
+      rows = await fetchFeed(false);
     }
 
-    const data = await response.json();
-    const rows = Array.isArray(data?.data) ? data.data : [];
     const seen = new Set<string>();
     const chapters: ScrapedChapter[] = [];
 
     for (const row of rows) {
       const chapterId = row.id;
       const attrs = row.attributes || {};
-      const chapterRaw = attrs.chapter ?? "0";
-      const key = `${chapterRaw}:${attrs.title || ""}`;
+      const chapterRaw = attrs.chapter ?? "oneshot";
+      const normalizedChapter = chapterRaw === null || chapterRaw === "" ? "oneshot" : String(chapterRaw);
+      const key = `${normalizedChapter}:${attrs.title || ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const num = parseFloat(chapterRaw);
+      const num = parseFloat(normalizedChapter);
       chapters.push({
         id: chapterId,
         number: Number.isFinite(num) ? num : 0,
@@ -187,5 +196,41 @@ export class MangaDexScraper extends BaseScraper {
       },
     }));
   }
-}
 
+  override async getMangaDetails(mangaUrl: string): Promise<ScrapedMangaDetails> {
+    const id = this.parseMangaId(mangaUrl);
+    const response = await fetch(
+      `${this.API_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`,
+      {
+        headers: {
+          "User-Agent": this.config.userAgent,
+          Accept: "application/json",
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const payload = await response.json();
+    const manga = payload?.data;
+    const attrs = manga?.attributes || {};
+    const relationships = Array.isArray(manga?.relationships) ? manga.relationships : [];
+
+    const coverRel = relationships.find((r: any) => r.type === "cover_art");
+    const fileName = coverRel?.attributes?.fileName;
+    const coverImage = fileName ? `${this.COVERS_CDN}/${id}/${fileName}.512.jpg` : undefined;
+
+    const authorRel = relationships.find((r: any) => r.type === "author");
+    const artistRel = relationships.find((r: any) => r.type === "artist");
+
+    return {
+      title: this.pickTitle(attrs),
+      id,
+      description: attrs?.description?.en || Object.values(attrs?.description || {})[0] as string | undefined,
+      coverImage,
+      author: authorRel?.attributes?.name,
+      artist: artistRel?.attributes?.name,
+    };
+  }
+}

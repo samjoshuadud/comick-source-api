@@ -1,4 +1,5 @@
-import { ScrapedChapter, SearchResult, SourceType } from "@/types";
+import { ScrapedChapter, ScrapedMangaDetails, SearchResult, SourceType } from "@/types";
+import * as cheerio from "cheerio";
 
 interface ScraperConfig {
   retryAttempts: number;
@@ -33,6 +34,54 @@ export abstract class BaseScraper {
   ): Promise<{ title: string; id: string }>;
   abstract getChapterList(mangaUrl: string): Promise<ScrapedChapter[]>;
   abstract search(query: string): Promise<SearchResult[]>;
+
+  async getMangaDetails(mangaUrl: string): Promise<ScrapedMangaDetails> {
+    const info = await this.extractMangaInfo(mangaUrl);
+    try {
+      const html = await this.fetchWithRetry(mangaUrl);
+      const $ = cheerio.load(html);
+
+      const title =
+        $("h1").first().text().trim() ||
+        $('meta[property="og:title"]').attr("content")?.trim() ||
+        info.title;
+
+      const description =
+        $('meta[property="og:description"]').attr("content")?.trim() ||
+        $('meta[name="description"]').attr("content")?.trim() ||
+        $(".summary__content, .description-summary, .entry-content").first().text().trim() ||
+        undefined;
+
+      const coverImage =
+        $('meta[property="og:image"]').attr("content")?.trim() ||
+        $('meta[name="twitter:image"]').attr("content")?.trim() ||
+        $(".summary_image img, .thumb img, .post-thumbnail img").first().attr("src")?.trim() ||
+        undefined;
+
+      const author =
+        $(".author-content a, .summary-content a").first().text().trim() ||
+        undefined;
+      const artist =
+        $(".artist-content a").first().text().trim() ||
+        undefined;
+
+      return {
+        title,
+        id: info.id,
+        description,
+        coverImage,
+        author,
+        artist,
+      };
+    } catch {
+      // Fall back to minimal metadata if HTML metadata extraction is unavailable.
+    }
+
+    return {
+      title: info.title,
+      id: info.id,
+    };
+  }
   
   // Get chapter page images - override in scrapers that support it
   async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {

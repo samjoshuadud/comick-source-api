@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseScraper } from './base';
-import { ScrapedChapter, SearchResult, SourceType } from '@/types';
+import { ScrapedChapter, ScrapedMangaDetails, SearchResult, SourceType } from '@/types';
 
 export class ComixScraper extends BaseScraper {
   private readonly baseUrl = 'https://comix.to';
@@ -49,6 +49,24 @@ export class ComixScraper extends BaseScraper {
         id: hashId
       };
     }
+  }
+
+  override async getMangaDetails(url: string): Promise<ScrapedMangaDetails> {
+    const info = await this.extractMangaInfo(url);
+    const response = await fetch(`${this.apiBase}/manga/${info.id}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const data = await response.json();
+    const result = data?.result || {};
+    return {
+      id: info.id,
+      title: result.title || info.title,
+      description: result.desc || result.description || '',
+      coverImage: result.poster?.large || result.poster?.medium,
+      author: Array.isArray(result.authors) ? result.authors.map((a: any) => a?.name).filter(Boolean).join(', ') : undefined,
+      artist: Array.isArray(result.artists) ? result.artists.map((a: any) => a?.name).filter(Boolean).join(', ') : undefined,
+    };
   }
 
   async getChapterList(mangaUrl: string): Promise<ScrapedChapter[]> {

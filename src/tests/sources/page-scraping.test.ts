@@ -20,8 +20,8 @@ const testChapterUrls: Record<string, string> = {
         "https://asurascans.com/comics/solo-leveling-f6174291/chapter/1",
     MangaRead:
         "https://www.mangaread.org/manga/omniscient-readers-viewpoint/chapter-1/",
-    MangaCloud:
-        "https://mangacloud.org/comic/182360379588872024/chapter/182360398782007131",
+    "Hades Scans":
+        "https://hadesscans.com/tale-of-the-floating-sages-chapter-227/",
     Mangataro:
         "https://mangataro.org/read/omniscient-readers-viewpoint/ch1-6499",
     Thunderscans:

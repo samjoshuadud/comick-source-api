@@ -32,6 +32,15 @@ export interface SearchResult {
   followers?: string;
 }
 
+export interface ScrapedMangaDetails {
+  title: string;
+  id: string;
+  description?: string;
+  coverImage?: string;
+  author?: string;
+  artist?: string;
+}
+
 export type SourceType = "scanlator" | "aggregator";
 
 export interface SourceInfo {

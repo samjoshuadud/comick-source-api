@@ -61,7 +61,6 @@ import { KuramangaScraper } from "./kuramanga";
 import { LHTranslationScraper } from "./lhtranslation";
 import { KenscansScraper } from "./kenscans";
 import { MangaKatanaScraper } from "./mangakatana";
-import { MangaCloudScraper } from "./mangacloud";
 import { MistScansScraper } from "./mistscans";
 import { RageScansScraper } from "./ragescans";
 import { AthreaScansScraper } from "./athreascans";
@@ -131,7 +130,6 @@ const scrapers: BaseScraper[] = [
   new LHTranslationScraper(),
   new KenscansScraper(),
   new MangaKatanaScraper(),
-  new MangaCloudScraper(),
   new MistScansScraper(),
   new RageScansScraper(),
   new AthreaScansScraper(),
@@ -235,7 +233,6 @@ export {
   LHTranslationScraper,
   KenscansScraper,
   MangaKatanaScraper,
-  MangaCloudScraper,
   MistScansScraper,
   RageScansScraper,
   AthreaScansScraper,
