@@ -2,19 +2,22 @@
 
 This document tracks which scrapers need `getChapterPages()` implementation for extracting manga page images.
 
-## ✅ Implemented (4/60+)
+## ✅ Implemented (7/60+)
 
 - [x] **AsuraScan** - Uses CDN images from `cdn.asurascans.com/asura-images/chapters/`
 - [x] **MangaRead** - WordPress-based, uses `wp-manga-chapter-img` class
 - [x] **MangaCloud** - Has API endpoint for chapter images
 - [x] **Mangataro** - Has API endpoint `auth/chapter-content` for chapter images (CDN: mangataro.yachts)
+- [x] **Thunderscans** - Reader payload includes `ts_reader.run({... sources[].images ...})`
+- [x] **Vortex Scans** - Reader HTML includes `storage.vortexscans.io` chapter image URLs
+- [x] **MangaDex** - Uses official MangaDex At-Home API (`/at-home/server/{chapterId}`)
 
 ## 🔔 Current Verification Scope Reminder
 
-End-to-end verification covers the 4 implemented sources above.
+End-to-end verification covers the implemented sources above (except sources currently blocked by Cloudflare in server runtime).
 
-- Backend `/api/pages` supports: `AsuraScan`, `MangaRead`, `MangaCloud`, `Mangataro`
-- Chapter list/page flows should be tested with `source` query/body set to one of those 4
+- Backend `/api/pages` supports: `AsuraScan`, `MangaRead`, `MangaCloud`, `Mangataro`, `Thunderscans`, `Vortex Scans`, `MangaDex`
+- Chapter list/page flows should be tested with `source` query/body set to one of those sources
 - Other scrapers must stay in TODO state until their `getChapterPages()` is implemented
 
 When adding new sources later:
@@ -39,7 +42,7 @@ The multi-source tracking and reader UI is integrated into the primary Next.js f
 - [ ] **Mgeko** - Need to verify working chapter URLs (was returning 404)
 - [ ] **Manhuaplus** - Need to find image pattern in reader
 - [ ] **WeebCentral** - Client-only scraper, reader structure investigation needed
-- [ ] **Vortex Scans** - Returned good results in search
+- [x] **Vortex Scans** - Returned good results in search
 - [ ] **Raven Scans** - WordPress-based manga reader
 - [ ] **WEBTOON** - Official platform, different structure
 - [ ] **AtsuMoe** - Custom reader implementation needed

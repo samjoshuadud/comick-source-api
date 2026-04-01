@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 interface QiScansChapter {
@@ -217,5 +217,18 @@ export class QiScansScraper extends BaseScraper {
       console.error("QiScans chapter list error:", error);
       throw error;
     }
+  }
+
+  override supportsPageScraping(): boolean {
+    return false;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    // Qi Scans is currently Cloudflare-protected server-side in this environment.
+    // Keep support enabled but fail fast with a clear, actionable error.
+    const canonicalUrl = chapterUrl.replace("qiscans.org", "qimanhwa.com");
+    throw new Error(
+      `Qi Scans chapter page scraping is blocked by cloudflare from server runtime. URL: ${canonicalUrl}`,
+    );
   }
 }

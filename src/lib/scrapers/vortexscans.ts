@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio";
-import { BaseScraper } from "./base";
+import { BaseScraper, ChapterPage } from "./base";
 import { ScrapedChapter, SearchResult, SourceType } from "@/types";
 
 interface VortexChapter {
@@ -28,8 +28,8 @@ interface VortexSearchResponse {
 }
 
 export class VortexScansScraper extends BaseScraper {
-  private readonly BASE_URL = "https://vortexscans.org";
-  private readonly API_URL = "https://api.vortexscans.org";
+  private readonly BASE_URL = "https://vortexscans.io";
+  private readonly API_URL = "https://api.vortexscans.io";
 
   getName(): string {
     return "Vortex Scans";
@@ -44,7 +44,7 @@ export class VortexScansScraper extends BaseScraper {
   }
 
   canHandle(url: string): boolean {
-    return url.includes("vortexscans.org");
+    return url.includes("vortexscans.io") || url.includes("vortexscans.org");
   }
 
   async extractMangaInfo(url: string): Promise<{ title: string; id: string }> {
@@ -158,5 +158,37 @@ export class VortexScansScraper extends BaseScraper {
         rating: post.averageRating,
       };
     });
+  }
+
+  override supportsPageScraping(): boolean {
+    return true;
+  }
+
+  async getChapterPages(chapterUrl: string): Promise<ChapterPage[]> {
+    const html = await this.fetchWithRetry(chapterUrl);
+    const matches = html.match(
+      /https?:\/\/storage\.vortexscans\.io\/public\/\/upload\/series\/[^"'\s]+\.(?:webp|jpg|jpeg|png)/gi,
+    );
+
+    if (!matches || matches.length === 0) {
+      throw new Error("No chapter images found in Vortex Scans reader payload");
+    }
+
+    const unique = Array.from(new Set(matches.map((url) => url.trim())));
+    const pages = unique.map((url, index) => ({
+      url,
+      index,
+      headers: {
+        Referer: this.getBaseUrl(),
+      },
+    }));
+
+    return pages.sort((a, b) => {
+      const parseNum = (u: string) => {
+        const m = u.match(/\/(\d+)\.(?:webp|jpg|jpeg|png)$/i);
+        return m ? parseInt(m[1], 10) : 0;
+      };
+      return parseNum(a.url) - parseNum(b.url);
+    }).map((page, index) => ({ ...page, index }));
   }
 }

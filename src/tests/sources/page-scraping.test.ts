@@ -24,6 +24,12 @@ const testChapterUrls: Record<string, string> = {
         "https://mangacloud.org/comic/182360379588872024/chapter/182360398782007131",
     Mangataro:
         "https://mangataro.org/read/omniscient-readers-viewpoint/ch1-6499",
+    Thunderscans:
+        "https://en-thunderscans.com/chapter-1/",
+    "Vortex Scans":
+        "https://vortexscans.io/series/emperor-of-solo-play/chapter-9",
+    MangaDex:
+        "https://mangadex.org/chapter/2cd94273-6cbf-4671-a8bd-56245b59122d",
 };
 
 describe("Page Scraping Health Check", () => {
